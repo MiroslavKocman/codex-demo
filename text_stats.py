@@ -7,20 +7,25 @@ from pathlib import Path
 
 
 def analyse(text: str) -> dict[str, int]:
-    """Count Unicode characters, whitespace-separated words, and logical lines.
+    """Count characters, words, logical lines, and case-insensitive unique words.
 
     Empty text has zero lines. A trailing newline does not add an empty line.
     Punctuation stays attached to words; this is intentionally a simple baseline.
+    Unique words are compared using Unicode casefolding.
     """
+    words = text.split()
     return {
         "characters": len(text),
-        "words": len(text.split()),
+        "words": len(words),
         "lines": len(text.splitlines()),
+        "unique_words": len({word.casefold() for word in words}),
     }
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Count characters, words and lines.")
+    parser = argparse.ArgumentParser(
+        description="Count characters, words, lines and case-insensitive unique words."
+    )
     parser.add_argument("--file", type=Path, help="Read a UTF-8 file instead of stdin.")
     args = parser.parse_args(argv)
     try:
