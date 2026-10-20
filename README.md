@@ -13,7 +13,7 @@ python3 text_stats.py --file samples/example.txt
 ```
 
 Ve Windows můžeš místo `python3` použít `python`.
-Výstup prvního příkladu je `{"characters": 10, "words": 2, "lines": 1}`.
+Výstup prvního příkladu je `{"characters": 10, "words": 2, "lines": 1, "unique_words": 2}`.
 
 ## Co aplikace dělá
 
@@ -22,6 +22,32 @@ Výstup prvního příkladu je `{"characters": 10, "words": 2, "lines": 1}`.
 - `characters`: počet znaků Unicode v načteném textu, včetně mezer a konců řádků;
 - `words`: počet částí oddělených bílými znaky; interpunkce zůstává součástí slova;
 - `lines`: počet řádků podle `str.splitlines()`. Prázdný text má nula řádků a závěrečný konec řádku nepřidává další řádek.
+- `unique_words`: počet různých slov bez ohledu na velikost písmen pomocí `str.casefold()`. Dělení podle bílých znaků i interpunkce zůstávají stejné jako u `words`.
+
+Například `Ahoj ahoj světe` má 3 slova, ale pouze 2 různá slova.
+`ŽLUŤOUČKÝ žluťoučký` má 1 různé slovo; stejně tak `Straße STRASSE`
+(Unicode `casefold()` rozpozná i tento rozdíl, na rozdíl od pouhého `lower()`).
+`ahoj ahoj!` má 2 různá slova, protože interpunkci neodstraňujeme.
+Prázdný text i text složený jen z bílých znaků mají `unique_words` rovno 0.
+
+### Kontrola druhého cvičení
+
+Spusť `python3 scripts/check.py` (ve Windows `python scripts/check.py`).
+Testy funkce ověřují samotný výpočet včetně diakritiky, opakování slov,
+interpunkce a bílých znaků. Testy CLI spouštějí celý program a ověřují JSON
+pro standardní vstup i UTF-8 soubor, prázdný vstup a chyby při čtení.
+Původní hodnoty znaků, slov a řádků se kontrolují i po přidání nového údaje.
+
+Pro ruční kontrolu bez závislosti na příkazech konkrétního shellu:
+
+```bash
+python3 -c "from text_stats import analyse; print(analyse('Ahoj ahoj světe'))"
+```
+
+Očekávej `{'characters': 15, 'words': 3, 'lines': 1, 'unique_words': 2}`.
+Tento příkaz vypisuje přímo slovník Pythonu; samotné CLI nadále vypisuje JSON.
+Před sloučením změn prohlédni `git diff` nebo záložku **Files changed** v pull requestu
+a ověř úspěšné testy pro Python 3.10 i 3.12 na GitHubu.
 
 Při čtení souboru Python normalizuje CRLF na LF; počty znaků se vztahují k načtenému textu.
 Chyba čtení vrací kód 1 a zprávu na stderr.

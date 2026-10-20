@@ -12,22 +12,34 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class AnalyseTests(unittest.TestCase):
     def test_empty_text(self):
-        self.assertEqual(analyse(""), {"characters": 0, "words": 0, "lines": 0})
+        self.assertEqual(analyse(""), {"characters": 0, "words": 0, "lines": 0, "unique_words": 0})
 
     def test_basic_text(self):
-        self.assertEqual(analyse("Hello world"), {"characters": 11, "words": 2, "lines": 1})
+        self.assertEqual(analyse("Hello world"), {"characters": 11, "words": 2, "lines": 1, "unique_words": 2})
 
     def test_unicode(self):
-        self.assertEqual(analyse("Příliš žluťoučký"), {"characters": 16, "words": 2, "lines": 1})
+        self.assertEqual(analyse("Příliš žluťoučký"), {"characters": 16, "words": 2, "lines": 1, "unique_words": 2})
 
     def test_whitespace(self):
-        self.assertEqual(analyse(" \t\n"), {"characters": 3, "words": 0, "lines": 1})
+        self.assertEqual(analyse(" \t\n"), {"characters": 3, "words": 0, "lines": 1, "unique_words": 0})
 
     def test_blank_lines_and_trailing_newline(self):
-        self.assertEqual(analyse("one\n\ntwo\n"), {"characters": 9, "words": 2, "lines": 3})
+        self.assertEqual(analyse("one\n\ntwo\n"), {"characters": 9, "words": 2, "lines": 3, "unique_words": 2})
 
     def test_windows_line_endings(self):
-        self.assertEqual(analyse("a\r\nb"), {"characters": 4, "words": 2, "lines": 2})
+        self.assertEqual(analyse("a\r\nb"), {"characters": 4, "words": 2, "lines": 2, "unique_words": 2})
+
+    def test_unique_words(self):
+        cases = [
+            ("Ahoj ahoj světe", 2),
+            ("ŽLUŤOUČKÝ žluťoučký PŘÍLIŠ příliš", 2),
+            ("Straße STRASSE", 1),
+            ("ahoj AHOJ ahoj! AHOJ!", 2),
+            ("ahoj\tAHOJ\nsvěte  SVĚTE", 2),
+        ]
+        for text, expected in cases:
+            with self.subTest(text=text):
+                self.assertEqual(analyse(text)["unique_words"], expected)
 
 
 class CommandLineTests(unittest.TestCase):
@@ -39,17 +51,25 @@ class CommandLineTests(unittest.TestCase):
         )
 
     def test_stdin(self):
-        result = self.run_cli(input_text="Hello cloud")
+        result = self.run_cli(input_text="Ahoj ahoj světe")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), {"characters": 11, "words": 2, "lines": 1})
+        self.assertEqual(json.loads(result.stdout), {"characters": 15, "words": 3, "lines": 1, "unique_words": 2})
 
     def test_utf8_file(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "sample.txt"
-            path.write_text("Ahoj světe", encoding="utf-8")
+            path.write_text("ŽLUŤOUČKÝ žluťoučký", encoding="utf-8")
             result = self.run_cli("--file", str(path))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), {"characters": 10, "words": 2, "lines": 1})
+        self.assertEqual(json.loads(result.stdout), {"characters": 19, "words": 2, "lines": 1, "unique_words": 1})
+
+    def test_empty_stdin(self):
+        result = self.run_cli()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            json.loads(result.stdout),
+            {"characters": 0, "words": 0, "lines": 0, "unique_words": 0},
+        )
 
     def test_missing_file(self):
         with tempfile.TemporaryDirectory() as folder:
